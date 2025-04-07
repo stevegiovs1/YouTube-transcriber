@@ -1,38 +1,30 @@
 import os
 import streamlit as st
 from pytube import YouTube
-import whisper
+from faster_whisper import WhisperModel
 
-st.set_page_config(page_title="Trascrizione YouTube", layout="centered")
+st.title("Trascrizione YouTube con Faster Whisper")
 
-st.title("Trascrivi l’audio di un video YouTube")
-st.markdown("Incolla il link di un video e ottieni la trascrizione automatica dell’audio.")
-
-video_url = st.text_input("Inserisci il link del video YouTube")
+video_url = st.text_input("Incolla il link del video YouTube")
 
 if st.button("Trascrivi"):
-    if not video_url:
-        st.warning("Per favore, inserisci un link.")
-    else:
-        try:
-            # Fix: converti youtu.be in formato standard
-            if "youtu.be/" in video_url:
-                video_url = video_url.split("?")[0].replace("youtu.be/", "www.youtube.com/watch?v=")
+    try:
+        if "youtu.be/" in video_url:
+            video_url = video_url.split("?")[0].replace("youtu.be/", "www.youtube.com/watch?v=")
 
-            st.info("Scarico l'audio dal video...")
-            yt = YouTube(video_url)
-            audio_stream = yt.streams.filter(only_audio=True).first()
-            audio_path = audio_stream.download(filename="temp_audio.mp4")
+        yt = YouTube(video_url)
+        audio_stream = yt.streams.filter(only_audio=True).first()
+        audio_path = audio_stream.download(filename="audio.mp4")
 
-            st.info("Avvio la trascrizione...")
-            model = whisper.load_model("base")
-            result = model.transcribe(audio_path)
+        model = WhisperModel("base", compute_type="int8")
 
-            st.success("Trascrizione completata!")
-            st.subheader("Testo trascritto:")
-            st.write(result["text"])
+        segments, _ = model.transcribe(audio_path)
+        transcript = "".join([segment.text for segment in segments])
 
-            os.remove(audio_path)
+        st.success("Trascrizione completata!")
+        st.write(transcript)
 
-        except Exception as e:
-            st.error(f"Errore: {str(e)}")
+        os.remove(audio_path)
+
+    except Exception as e:
+        st.error(f"Errore: {str(e)}")
