@@ -15,13 +15,17 @@ if st.button("Trascrivi"):
         st.warning("Per favore, inserisci un link.")
     else:
         try:
+            # Fix: converti youtu.be in formato standard
+            if "youtu.be/" in video_url:
+                video_url = video_url.split("?")[0].replace("youtu.be/", "www.youtube.com/watch?v=")
+
             st.info("Scarico l'audio dal video...")
             yt = YouTube(video_url)
             audio_stream = yt.streams.filter(only_audio=True).first()
             audio_path = audio_stream.download(filename="temp_audio.mp4")
 
             st.info("Avvio la trascrizione...")
-            model = whisper.load_model("base")  # Puoi usare anche "small" o "medium"
+            model = whisper.load_model("base")
             result = model.transcribe(audio_path)
 
             st.success("Trascrizione completata!")
